@@ -66,7 +66,7 @@ type LifecycleTest struct {
 var _ = SynchronizedBeforeSuite(func() []byte {
 	parseEnv()
 	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL, "--space-scoped"), cf_helpers.CfTimeout).Should(gexec.Exit(0))
-	Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	// Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
 	return []byte{}
 }, func(data []byte) {
 	parseEnv()
