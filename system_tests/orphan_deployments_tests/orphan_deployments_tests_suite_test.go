@@ -40,8 +40,7 @@ var _ = BeforeSuite(func() {
 	boshPassword := envMustHave("BOSH_PASSWORD")
 	boshCACert := os.Getenv("BOSH_CA_CERT_FILE")
 
-	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL), cf_helpers.CfTimeout).Should(gexec.Exit(0))
-	Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL, "--space-scoped"), cf_helpers.CfTimeout).Should(gexec.Exit(0))
 
 	if uaaURL == "" {
 		boshClient = bosh_helpers.NewBasicAuth(boshURL, boshUsername, boshPassword, boshCACert, boshCACert == "")

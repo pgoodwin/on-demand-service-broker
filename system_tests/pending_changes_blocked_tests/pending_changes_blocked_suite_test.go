@@ -56,8 +56,7 @@ var _ = BeforeSuite(func() {
 	originalBrokerManifest = boshClient.GetManifest(brokerBoshDeploymentName)
 
 	By("registering the broker")
-	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL), cf_helpers.CfTimeout).Should(gexec.Exit(0))
-	Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL, "--space-scoped"), cf_helpers.CfTimeout).Should(gexec.Exit(0))
 
 	By("creating a service instance")
 	Eventually(cf.Cf("create-service", serviceOffering, "dedicated-vm", serviceInstanceName), cf_helpers.CfTimeout).Should(gexec.Exit(0))

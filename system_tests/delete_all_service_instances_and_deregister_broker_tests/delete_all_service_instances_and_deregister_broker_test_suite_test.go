@@ -42,8 +42,7 @@ var _ = BeforeSuite(func() {
 	boshCACert := os.Getenv("BOSH_CA_CERT_FILE")
 	disableTLSVerification := boshCACert == ""
 	exampleAppPath = envMustHave("EXAMPLE_APP_PATH")
-	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL), cf_helpers.CfTimeout).Should(gexec.Exit(0))
-	Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL), cf_helpers.CfTimeout, "--space-scoped").Should(gexec.Exit(0))
 
 	if uaaURL == "" {
 		boshClient = bosh_helpers.NewBasicAuth(boshURL, boshUsername, boshPassword, boshCACert, disableTLSVerification)
