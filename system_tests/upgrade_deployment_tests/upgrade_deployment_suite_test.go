@@ -59,7 +59,8 @@ var _ = BeforeSuite(func() {
 		boshClient = bosh_helpers.New(boshURL, uaaURL, boshUsername, boshPassword, boshCACert)
 	}
 
-	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL, "--space-scoped"), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	Eventually(cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+	Eventually(cf.Cf("enable-service-access", serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
 })
 
 var _ = AfterSuite(func() {

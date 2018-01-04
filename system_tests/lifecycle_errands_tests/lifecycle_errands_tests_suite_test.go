@@ -35,9 +35,11 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Eventually(deleteBrokerSession, cf_helpers.CfTimeout).Should(gexec.Exit())
 
 	By("registering the broker")
-	createBrokerSession := cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL, "--space-scoped")
+	createBrokerSession := cf.Cf("create-service-broker", brokerName, brokerUsername, brokerPassword, brokerURL)
 	Eventually(createBrokerSession, cf_helpers.CfTimeout).Should(gexec.Exit(0))
 
+	enableServiceAccessSession := cf.Cf("enable-service-access", serviceOffering)
+	Eventually(enableServiceAccessSession, cf_helpers.CfTimeout).Should(gexec.Exit(0))
 	return []byte{}
 }, func(data []byte) {
 	parseEnv()

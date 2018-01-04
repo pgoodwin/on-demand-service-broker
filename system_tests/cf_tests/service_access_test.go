@@ -22,7 +22,7 @@ var _ = Describe("cf.Client.DisableServiceAccess", func() {
 
 	BeforeEach(func() {
 		conf = testConfigFromEnv()
-		Eventually(cf_helper.Cf("create-service-broker", conf.brokerName, conf.brokerUsername, conf.brokerPassword, conf.brokerURL, "--space-scoped"), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+		Eventually(cf_helper.Cf("create-service-broker", conf.brokerName, conf.brokerUsername, conf.brokerPassword, conf.brokerURL), cf_helpers.CfTimeout).Should(gexec.Exit(0))
 	})
 
 	AfterEach(func() {
@@ -30,6 +30,8 @@ var _ = Describe("cf.Client.DisableServiceAccess", func() {
 	})
 
 	It("disables service access", func() {
+		Eventually(cf_helper.Cf("enable-service-access", conf.serviceOffering), cf_helpers.CfTimeout).Should(gexec.Exit(0))
+
 		client := getClient(conf.cFUAAURL, conf.cfAPIURL, conf.cfUser, conf.cfPassword)
 		err := client.DisableServiceAccess(conf.serviceGUID, testLogger())
 
