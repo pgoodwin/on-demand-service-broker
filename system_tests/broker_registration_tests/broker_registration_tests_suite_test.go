@@ -43,6 +43,7 @@ var _ = BeforeSuite(func() {
 	disableTLSVerification := boshCACert == ""
 	uaaURL := os.Getenv("UAA_URL")
 
+	cfAdminUsername = envMustHave("CF_USERNAME")
 	cfAdminPassword = envMustHave("CF_PASSWORD")
 	cfSpaceDeveloperUsername = envMustHave("CF_SPACE_DEVELOPER_USERNAME")
 	cfSpaceDeveloperPassword = envMustHave("CF_SPACE_DEVELOPER_PASSWORD")
@@ -91,6 +92,6 @@ func cfLogInAsSpaceDev() {
 }
 
 func cfLogInAsAdmin() {
-	Eventually(cf.Cf("auth", "admin", cfAdminPassword)).Should(gexec.Exit(0))
+	Eventually(cf.Cf("auth", cfAdminUsername, cfAdminPassword)).Should(gexec.Exit(0))
 	Eventually(cf.Cf("target", "-o", cfOrg, "-s", cfSpace)).Should(gexec.Exit(0))
 }
