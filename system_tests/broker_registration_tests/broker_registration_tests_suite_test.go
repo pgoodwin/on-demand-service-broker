@@ -23,6 +23,7 @@ var (
 	serviceOffering          string
 	brokerName               string
 	brokerBoshDeploymentName string
+	cfAdminUsername          string
 	cfAdminPassword          string
 	cfSpaceDeveloperUsername string
 	cfSpaceDeveloperPassword string
