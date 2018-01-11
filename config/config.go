@@ -484,11 +484,13 @@ func (p Plan) PreDeleteErrandInstances() []string {
 	return p.LifecycleErrands.PreDelete.Instances
 }
 
-type PlanMetadata struct {
-	DisplayName string     `yaml:"display_name"`
-	Bullets     []string   `yaml:"bullets,omitempty"`
-	Costs       []PlanCost `yaml:"costs"`
-}
+type PlanMetadata = map[string]interface{}
+
+// struct {
+// 	DisplayName string     `yaml:"display_name"`
+// 	Bullets     []string   `yaml:"bullets,omitempty"`
+// 	Costs       []PlanCost `yaml:"costs"`
+// }
 
 type PlanCost struct {
 	Amount map[string]float64 `yaml:"amount"`

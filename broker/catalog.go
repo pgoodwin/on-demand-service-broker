@@ -16,7 +16,7 @@ func (b *Broker) Services(_ context.Context) []brokerapi.Service {
 	servicePlans := []brokerapi.ServicePlan{}
 	for _, plan := range b.serviceOffering.Plans {
 		planCosts := []brokerapi.ServicePlanCost{}
-		for _, cost := range plan.Metadata.Costs {
+		for _, cost := range plan.Metadata["costs"].([]brokerapi.ServicePlanCost) {
 			planCosts = append(planCosts, brokerapi.ServicePlanCost{Amount: cost.Amount, Unit: cost.Unit})
 		}
 
@@ -26,10 +26,10 @@ func (b *Broker) Services(_ context.Context) []brokerapi.Service {
 			Description: plan.Description,
 			Free:        plan.Free,
 			Bindable:    plan.Bindable,
-			Metadata: &brokerapi.ServicePlanMetadata{
-				DisplayName: plan.Metadata.DisplayName,
-				Bullets:     plan.Metadata.Bullets,
-				Costs:       planCosts,
+			Metadata: &map[string]interface{}{
+				"displayName": plan.Metadata["displayName"],
+				"bullets":     plan.Metadata["bullets"],
+				"costs":       planCosts,
 			},
 		}
 		servicePlans = append(servicePlans, servicePlan)

@@ -61,7 +61,7 @@ var _ = Describe("Catalog", func() {
 			config.ServiceCatalog.DashboardClient = nil
 		})
 
-		It("returns catalog metadata", func() {
+		FIt("returns catalog metadata", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/v2/catalog", brokerPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req = basicAuthBrokerRequest(req)
@@ -73,6 +73,18 @@ var _ = Describe("Catalog", func() {
 			defer response.Body.Close()
 
 			catalog := make(map[string][]brokerapi.Service)
+			metadata := map[string]interface{}{
+				"additional-field": "value",
+				"bullets":          dedicatedPlanBullets,
+				"displayName":      dedicatedPlanDisplayName,
+				"costs": []brokerapi.ServicePlanCost{
+					{
+						Unit:   dedicatedPlanCostUnit,
+						Amount: dedicatedPlanCostAmount,
+					},
+				},
+			}
+
 			Expect(json.NewDecoder(response.Body).Decode(&catalog)).To(Succeed())
 			Expect(catalog).To(Equal(map[string][]brokerapi.Service{
 				"services": {
@@ -100,24 +112,15 @@ var _ = Describe("Catalog", func() {
 								Description: dedicatedPlanDescription,
 								Free:        booleanPointer(true),
 								Bindable:    booleanPointer(true),
-								Metadata: &brokerapi.ServicePlanMetadata{
-									Bullets:     dedicatedPlanBullets,
-									DisplayName: dedicatedPlanDisplayName,
-									Costs: []brokerapi.ServicePlanCost{
-										{
-											Unit:   dedicatedPlanCostUnit,
-											Amount: dedicatedPlanCostAmount,
-										},
-									},
-								},
+								Metadata:    &metadata,
 							},
 							{
 								ID:          highMemoryPlanID,
 								Name:        highMemoryPlanName,
 								Description: highMemoryPlanDescription,
-								Metadata: &brokerapi.ServicePlanMetadata{
-									Bullets:     highMemoryPlanBullets,
-									DisplayName: highMemoryPlanDisplayName,
+								Metadata: &map[string]interface{}{
+									"bullets":     highMemoryPlanBullets,
+									"displayName": highMemoryPlanDisplayName,
 								},
 							},
 						},
@@ -177,10 +180,10 @@ var _ = Describe("Catalog", func() {
 								Description: dedicatedPlanDescription,
 								Free:        booleanPointer(true),
 								Bindable:    booleanPointer(true),
-								Metadata: &brokerapi.ServicePlanMetadata{
-									Bullets:     dedicatedPlanBullets,
-									DisplayName: dedicatedPlanDisplayName,
-									Costs: []brokerapi.ServicePlanCost{
+								Metadata: &map[string]interface{}{
+									"bullets":     dedicatedPlanBullets,
+									"displayName": dedicatedPlanDisplayName,
+									"costs": []brokerapi.ServicePlanCost{
 										{
 											Unit:   dedicatedPlanCostUnit,
 											Amount: dedicatedPlanCostAmount,
@@ -192,9 +195,9 @@ var _ = Describe("Catalog", func() {
 								ID:          highMemoryPlanID,
 								Name:        highMemoryPlanName,
 								Description: highMemoryPlanDescription,
-								Metadata: &brokerapi.ServicePlanMetadata{
-									Bullets:     highMemoryPlanBullets,
-									DisplayName: highMemoryPlanDisplayName,
+								Metadata: &map[string]interface{}{
+									"bullets":     highMemoryPlanBullets,
+									"displayName": highMemoryPlanDisplayName,
 								},
 							},
 						},

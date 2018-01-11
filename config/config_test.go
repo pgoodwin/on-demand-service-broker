@@ -119,9 +119,9 @@ var _ = Describe("Broker Config", func() {
 								Description: "I'm a dedicated plan",
 								Free:        booleanPointer(true),
 								Metadata: config.PlanMetadata{
-									DisplayName: "Dedicated-Cluster",
-									Bullets:     []string{"bullet one", "bullet two", "bullet three"},
-									Costs: []config.PlanCost{
+									"displayName": "Dedicated-Cluster",
+									"bullets":     []string{"bullet one", "bullet two", "bullet three"},
+									"costs": []config.PlanCost{
 										{Amount: map[string]float64{"usd": 99.0, "eur": 49.0}, Unit: "MONTHLY"},
 										{Amount: map[string]float64{"usd": 0.99, "eur": 0.49}, Unit: "1GB of messages over 20GB"},
 									},
