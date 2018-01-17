@@ -94,7 +94,7 @@ func (b *Broker) LastOperation(ctx context.Context, instanceID, operationDataRaw
 
 func constructLastOperation(ctx context.Context, boshTask boshdirector.BoshTask, operationData OperationData, logger *log.Logger) brokerapi.LastOperation {
 	taskState := lastOperationState(boshTask, logger)
-	description := descriptionForOperationTask(ctx, taskState, operationData, boshTask.ID)
+	description := descriptionForOperationTask(ctx, taskState, operationData, boshTask)
 
 	return brokerapi.LastOperation{State: taskState, Description: description}
 }
@@ -113,14 +113,14 @@ func lastOperationState(task boshdirector.BoshTask, logger *log.Logger) brokerap
 	}
 }
 
-func descriptionForOperationTask(ctx context.Context, taskState brokerapi.LastOperationState, operationData OperationData, taskID int) string {
+func descriptionForOperationTask(ctx context.Context, taskState brokerapi.LastOperationState, operationData OperationData, task boshdirector.BoshTask) string {
 	description := descriptions[taskState][operationData.OperationType]
 
 	if taskState == brokerapi.Failed {
 		if operationData.OperationType == OperationTypeUpgrade {
-			description = fmt.Sprintf(description+": %d", taskID) // Allows upgrader to log BOSH task ID when an upgrade fails
+			description = fmt.Sprintf(description+": %d", task.ID) // Allows upgrader to log BOSH task ID when an upgrade fails
 		} else {
-			description = fmt.Sprintf(description+": %s", NewGenericError(ctx, nil).ErrorForCFUser())
+			description = fmt.Sprintf(description+": %s", NewGenericError(ctx, errors.New(task.Result)).ErrorForCFUser())
 		}
 	}
 

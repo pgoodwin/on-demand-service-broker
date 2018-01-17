@@ -46,7 +46,7 @@ type DisplayableError struct {
 }
 
 func (e DisplayableError) ErrorForCFUser() error {
-	return e.errorForCFUser
+	return e.errorForOperator
 }
 
 func (e DisplayableError) Error() string {
