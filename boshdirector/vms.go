@@ -15,10 +15,23 @@ import (
 )
 
 func (c *Client) VMs(deploymentName string, logger *log.Logger) (bosh.BoshVMs, error) {
+	vmsInfo, err := c.InstancesDetails(deploymentName, logger)
+	if err != nil {
+		return bosh.BoshVMs{}, err
+	}
+
+	boshVms := bosh.BoshVMs{}
+	for _, vmInfo := range vmsInfo {
+		boshVms[vmInfo.JobName] = append(boshVms[vmInfo.JobName], vmInfo.IPs...)
+	}
+	return boshVms, nil
+}
+
+func (c *Client) InstancesDetails(deploymentName string, logger *log.Logger) ([]director.VMInfo, error) {
 	logger.Printf("retrieving VMs for deployment %s from bosh\n", deploymentName)
 	d, err := c.Director(director.NewNoopTaskReporter())
 	if err != nil {
-		return bosh.BoshVMs{}, errors.Wrap(err, "Failed to build director")
+		return []director.VMInfo{}, errors.Wrap(err, "Failed to build director")
 	}
 
 	deployment, err := d.FindDeployment(deploymentName)
@@ -30,9 +43,6 @@ func (c *Client) VMs(deploymentName string, logger *log.Logger) (bosh.BoshVMs, e
 	if err != nil {
 		return nil, errors.Wrapf(err, `Could not fetch VMs info for deployment "%s"`, deploymentName)
 	}
-	boshVms := bosh.BoshVMs{}
-	for _, vmInfo := range vmsInfo {
-		boshVms[vmInfo.JobName] = append(boshVms[vmInfo.JobName], vmInfo.IPs...)
-	}
-	return boshVms, nil
+
+	return vmsInfo, nil
 }

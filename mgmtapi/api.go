@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/cloudfoundry/bosh-cli/director"
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/brokerapi"
@@ -38,6 +39,7 @@ type ManageableBroker interface {
 	OrphanDeployments(logger *log.Logger) ([]string, error)
 	Upgrade(ctx context.Context, instanceID string, updateDetails brokerapi.UpdateDetails, logger *log.Logger) (broker.OperationData, error)
 	CountInstancesOfPlans(logger *log.Logger) (map[cf.ServicePlan]int, error)
+	InstanceDetails(instanceID string, logger *log.Logger) ([]director.VMInfo, error)
 }
 
 type Deployment struct {
@@ -54,8 +56,24 @@ func AttachRoutes(r *mux.Router, manageableBroker ManageableBroker, serviceOffer
 	a := &api{manageableBroker: manageableBroker, serviceOffering: serviceOffering, loggerFactory: loggerFactory}
 	r.HandleFunc("/mgmt/service_instances", a.listAllInstances).Methods("GET")
 	r.HandleFunc("/mgmt/service_instances/{instance_id}", a.upgradeInstance).Methods("PATCH")
+	r.HandleFunc("/mgmt/service_instances/{instance_id}", a.instanceDetails).Methods(http.MethodGet)
 	r.HandleFunc("/mgmt/metrics", a.metrics).Methods("GET")
 	r.HandleFunc("/mgmt/orphan_deployments", a.listOrphanDeployments).Methods("GET")
+}
+
+func (a *api) instanceDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	instanceID := vars["instance_id"]
+
+	logger := a.loggerFactory.NewWithRequestID()
+	d, err := a.manageableBroker.InstanceDetails(instanceID, logger)
+	if err != nil {
+		logger.Printf("error occured querying instance details: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	a.writeJson(w, d, logger)
 }
 
 func (a *api) listOrphanDeployments(w http.ResponseWriter, r *http.Request) {

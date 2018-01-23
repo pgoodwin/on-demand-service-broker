@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/cloudfoundry/bosh-cli/director"
 	"github.com/pivotal-cf/on-demand-service-broker/boshdirector"
 	"github.com/pivotal-cf/on-demand-service-broker/broker"
 	"github.com/pivotal-cf/on-demand-services-sdk/bosh"
@@ -66,6 +67,20 @@ type FakeBoshClient struct {
 	}
 	vMsReturnsOnCall map[int]struct {
 		result1 bosh.BoshVMs
+		result2 error
+	}
+	InstancesDetailsStub        func(deploymentName string, logger *log.Logger) ([]director.VMInfo, error)
+	instancesDetailsMutex       sync.RWMutex
+	instancesDetailsArgsForCall []struct {
+		deploymentName string
+		logger         *log.Logger
+	}
+	instancesDetailsReturns struct {
+		result1 []director.VMInfo
+		result2 error
+	}
+	instancesDetailsReturnsOnCall map[int]struct {
+		result1 []director.VMInfo
 		result2 error
 	}
 	GetDeploymentStub        func(name string, logger *log.Logger) ([]byte, bool, error)
@@ -364,6 +379,58 @@ func (fake *FakeBoshClient) VMsReturnsOnCall(i int, result1 bosh.BoshVMs, result
 	}
 	fake.vMsReturnsOnCall[i] = struct {
 		result1 bosh.BoshVMs
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBoshClient) InstancesDetails(deploymentName string, logger *log.Logger) ([]director.VMInfo, error) {
+	fake.instancesDetailsMutex.Lock()
+	ret, specificReturn := fake.instancesDetailsReturnsOnCall[len(fake.instancesDetailsArgsForCall)]
+	fake.instancesDetailsArgsForCall = append(fake.instancesDetailsArgsForCall, struct {
+		deploymentName string
+		logger         *log.Logger
+	}{deploymentName, logger})
+	fake.recordInvocation("InstancesDetails", []interface{}{deploymentName, logger})
+	fake.instancesDetailsMutex.Unlock()
+	if fake.InstancesDetailsStub != nil {
+		return fake.InstancesDetailsStub(deploymentName, logger)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.instancesDetailsReturns.result1, fake.instancesDetailsReturns.result2
+}
+
+func (fake *FakeBoshClient) InstancesDetailsCallCount() int {
+	fake.instancesDetailsMutex.RLock()
+	defer fake.instancesDetailsMutex.RUnlock()
+	return len(fake.instancesDetailsArgsForCall)
+}
+
+func (fake *FakeBoshClient) InstancesDetailsArgsForCall(i int) (string, *log.Logger) {
+	fake.instancesDetailsMutex.RLock()
+	defer fake.instancesDetailsMutex.RUnlock()
+	return fake.instancesDetailsArgsForCall[i].deploymentName, fake.instancesDetailsArgsForCall[i].logger
+}
+
+func (fake *FakeBoshClient) InstancesDetailsReturns(result1 []director.VMInfo, result2 error) {
+	fake.InstancesDetailsStub = nil
+	fake.instancesDetailsReturns = struct {
+		result1 []director.VMInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeBoshClient) InstancesDetailsReturnsOnCall(i int, result1 []director.VMInfo, result2 error) {
+	fake.InstancesDetailsStub = nil
+	if fake.instancesDetailsReturnsOnCall == nil {
+		fake.instancesDetailsReturnsOnCall = make(map[int]struct {
+			result1 []director.VMInfo
+			result2 error
+		})
+	}
+	fake.instancesDetailsReturnsOnCall[i] = struct {
+		result1 []director.VMInfo
 		result2 error
 	}{result1, result2}
 }
@@ -699,6 +766,8 @@ func (fake *FakeBoshClient) Invocations() map[string][][]interface{} {
 	defer fake.getNormalisedTasksByContextMutex.RUnlock()
 	fake.vMsMutex.RLock()
 	defer fake.vMsMutex.RUnlock()
+	fake.instancesDetailsMutex.RLock()
+	defer fake.instancesDetailsMutex.RUnlock()
 	fake.getDeploymentMutex.RLock()
 	defer fake.getDeploymentMutex.RUnlock()
 	fake.getDeploymentsMutex.RLock()

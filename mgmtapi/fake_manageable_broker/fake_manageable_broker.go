@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/cloudfoundry/bosh-cli/director"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/on-demand-service-broker/broker"
 	"github.com/pivotal-cf/on-demand-service-broker/cf"
@@ -67,6 +68,20 @@ type FakeManageableBroker struct {
 	}
 	countInstancesOfPlansReturnsOnCall map[int]struct {
 		result1 map[cf.ServicePlan]int
+		result2 error
+	}
+	InstanceDetailsStub        func(instanceID string, logger *log.Logger) ([]director.VMInfo, error)
+	instanceDetailsMutex       sync.RWMutex
+	instanceDetailsArgsForCall []struct {
+		instanceID string
+		logger     *log.Logger
+	}
+	instanceDetailsReturns struct {
+		result1 []director.VMInfo
+		result2 error
+	}
+	instanceDetailsReturnsOnCall map[int]struct {
+		result1 []director.VMInfo
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -280,6 +295,58 @@ func (fake *FakeManageableBroker) CountInstancesOfPlansReturnsOnCall(i int, resu
 	}{result1, result2}
 }
 
+func (fake *FakeManageableBroker) InstanceDetails(instanceID string, logger *log.Logger) ([]director.VMInfo, error) {
+	fake.instanceDetailsMutex.Lock()
+	ret, specificReturn := fake.instanceDetailsReturnsOnCall[len(fake.instanceDetailsArgsForCall)]
+	fake.instanceDetailsArgsForCall = append(fake.instanceDetailsArgsForCall, struct {
+		instanceID string
+		logger     *log.Logger
+	}{instanceID, logger})
+	fake.recordInvocation("InstanceDetails", []interface{}{instanceID, logger})
+	fake.instanceDetailsMutex.Unlock()
+	if fake.InstanceDetailsStub != nil {
+		return fake.InstanceDetailsStub(instanceID, logger)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.instanceDetailsReturns.result1, fake.instanceDetailsReturns.result2
+}
+
+func (fake *FakeManageableBroker) InstanceDetailsCallCount() int {
+	fake.instanceDetailsMutex.RLock()
+	defer fake.instanceDetailsMutex.RUnlock()
+	return len(fake.instanceDetailsArgsForCall)
+}
+
+func (fake *FakeManageableBroker) InstanceDetailsArgsForCall(i int) (string, *log.Logger) {
+	fake.instanceDetailsMutex.RLock()
+	defer fake.instanceDetailsMutex.RUnlock()
+	return fake.instanceDetailsArgsForCall[i].instanceID, fake.instanceDetailsArgsForCall[i].logger
+}
+
+func (fake *FakeManageableBroker) InstanceDetailsReturns(result1 []director.VMInfo, result2 error) {
+	fake.InstanceDetailsStub = nil
+	fake.instanceDetailsReturns = struct {
+		result1 []director.VMInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeManageableBroker) InstanceDetailsReturnsOnCall(i int, result1 []director.VMInfo, result2 error) {
+	fake.InstanceDetailsStub = nil
+	if fake.instanceDetailsReturnsOnCall == nil {
+		fake.instanceDetailsReturnsOnCall = make(map[int]struct {
+			result1 []director.VMInfo
+			result2 error
+		})
+	}
+	fake.instanceDetailsReturnsOnCall[i] = struct {
+		result1 []director.VMInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeManageableBroker) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -291,6 +358,8 @@ func (fake *FakeManageableBroker) Invocations() map[string][][]interface{} {
 	defer fake.upgradeMutex.RUnlock()
 	fake.countInstancesOfPlansMutex.RLock()
 	defer fake.countInstancesOfPlansMutex.RUnlock()
+	fake.instanceDetailsMutex.RLock()
+	defer fake.instanceDetailsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

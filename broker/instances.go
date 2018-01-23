@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/cloudfoundry/bosh-cli/director"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/on-demand-service-broker/config"
 	"github.com/pivotal-cf/on-demand-service-broker/service"
@@ -42,4 +43,14 @@ func (b *Broker) validatePlanQuota(ctx context.Context, serviceID string, plan c
 	}
 
 	return NilError
+}
+
+func (b *Broker) InstanceDetails(instanceID string, logger *log.Logger) ([]director.VMInfo, error) {
+	vmsInfo, err := b.boshClient.InstancesDetails(deploymentName(instanceID), logger)
+	if err != nil {
+		logger.Printf("error listing instance details: %s", err)
+		return []director.VMInfo{}, err
+	}
+
+	return vmsInfo, nil
 }

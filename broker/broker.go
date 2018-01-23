@@ -13,6 +13,7 @@ import (
 
 	"fmt"
 
+	"github.com/cloudfoundry/bosh-cli/director"
 	"github.com/pivotal-cf/on-demand-service-broker/boshdirector"
 	"github.com/pivotal-cf/on-demand-service-broker/cf"
 	"github.com/pivotal-cf/on-demand-service-broker/config"
@@ -139,6 +140,7 @@ type BoshClient interface {
 	GetTasks(deploymentName string, logger *log.Logger) (boshdirector.BoshTasks, error)
 	GetNormalisedTasksByContext(deploymentName, contextID string, logger *log.Logger) (boshdirector.BoshTasks, error)
 	VMs(deploymentName string, logger *log.Logger) (bosh.BoshVMs, error)
+	InstancesDetails(deploymentName string, logger *log.Logger) ([]director.VMInfo, error)
 	GetDeployment(name string, logger *log.Logger) ([]byte, bool, error)
 	GetDeployments(logger *log.Logger) ([]boshdirector.Deployment, error)
 	DeleteDeployment(name, contextID string, logger *log.Logger, taskReporter *boshdirector.AsyncTaskReporter) (int, error)
