@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/on-demand-service-broker/boshdirector"
 	"github.com/pivotal-cf/on-demand-service-broker/loggerfactory"
 	yaml "gopkg.in/yaml.v2"
@@ -23,20 +24,22 @@ var _ = Describe("BOSH client", func() {
 	)
 
 	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Second)
-		reporter := boshdirector.NewAsyncTaskReporter()
+		SetDefaultEventuallyTimeout(15 * time.Second)
+		//reporter := boshdirector.NewAsyncTaskReporter()
 		boshClient = NewBOSHClient()
 		logger = loggerfactory.New(GinkgoWriter, "contract-test", loggerfactory.Flags).New()
-		deploymentName = "bill"
+		deploymentName = "bill_" + uuid.New()
 
-		_, err := boshClient.DeleteDeployment(deploymentName, "", logger, reporter)
-		Expect(err).NotTo(HaveOccurred())
+		//_, err := boshClient.DeleteDeployment(deploymentName, "", logger, reporter)
+		//Expect(err).NotTo(HaveOccurred())
+		//Eventually(reporter.Finished).Should(Receive())
 	})
 
 	AfterEach(func() {
 		reporter := boshdirector.NewAsyncTaskReporter()
 		_, err := boshClient.DeleteDeployment(deploymentName, "", logger, reporter)
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(reporter.Finished).Should(Receive())
 	})
 
 	Describe("GetInfo()", func() {
@@ -64,7 +67,7 @@ var _ = Describe("BOSH client", func() {
 	Describe("DeleteDeployment()", func() {
 		It("deletes the deployment and returns a taskID", func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
-			_, err := boshClient.Deploy(getManifest("successful_deploy.yml"), "", logger, reporter)
+			_, err := boshClient.Deploy(getManifest("successful_deploy.yml", deploymentName), "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(reporter.Finished).Should(Receive())
@@ -90,7 +93,7 @@ var _ = Describe("BOSH client", func() {
 		It("succeeds", func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
 
-			taskID, err := boshClient.Deploy(getManifest("successful_deploy.yml"), "some-context-id", logger, reporter)
+			taskID, err := boshClient.Deploy(getManifest("successful_deploy.yml", deploymentName), "some-context-id", logger, reporter)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(taskID).To(BeNumerically(">=", 1))
@@ -101,14 +104,15 @@ var _ = Describe("BOSH client", func() {
 
 	Describe("GetDeployment()", func() {
 		It("succeeds and return the manifest when deployment is found", func() {
-			manifest := getManifest("successful_deploy.yml")
+			manifest := getManifest("successful_deploy.yml", deploymentName)
 			reporter := boshdirector.NewAsyncTaskReporter()
 
 			_, err := boshClient.Deploy(manifest, "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(reporter.Finished).Should(Receive())
 
-			returnedManifest, found, getDeploymentErr := boshClient.GetDeployment("bill", logger)
+			returnedManifest, found, getDeploymentErr := boshClient.GetDeployment(deploymentName, logger)
+			//Expect(manifest).To(MatchYAML(returnedManifest))
 
 			// TODO: if used somewhere else, extract in suite or Gomega matcher
 			type testManifest struct {
@@ -161,7 +165,7 @@ var _ = Describe("BOSH client", func() {
 
 		BeforeEach(func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
-			taskID, err = boshClient.Deploy(getManifest("successful_deploy.yml"), "", logger, reporter)
+			taskID, err = boshClient.Deploy(getManifest("successful_deploy.yml", deploymentName), "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(reporter.Finished).Should(Receive())
@@ -180,14 +184,14 @@ var _ = Describe("BOSH client", func() {
 
 		BeforeEach(func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
-			taskID, err = boshClient.Deploy(getManifest("successful_deploy.yml"), "", logger, reporter)
+			taskID, err = boshClient.Deploy(getManifest("successful_deploy.yml", deploymentName), "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(reporter.Finished).Should(Receive())
 		})
 
 		It("succeeds", func() {
-			tasks, err := boshClient.GetTasks("bill", logger)
+			tasks, err := boshClient.GetTasks(deploymentName, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tasks[0].ID).To(Equal(taskID))
 		})
@@ -196,14 +200,14 @@ var _ = Describe("BOSH client", func() {
 	Describe("VMs()", func() {
 		BeforeEach(func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
-			_, err := boshClient.Deploy(getManifest("single_vm_deployment.yml"), "", logger, reporter)
+			_, err := boshClient.Deploy(getManifest("single_vm_deployment.yml", deploymentName), "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(reporter.Finished).Should(Receive())
 		})
 
 		It("succeeds", func() {
-			vms, err := boshClient.VMs("dummy", logger)
+			vms, err := boshClient.VMs(deploymentName, logger)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(vms["dummy"]).NotTo(BeEmpty())
 		})
@@ -225,13 +229,13 @@ var _ = Describe("BOSH client", func() {
 	Describe("RunErrand() and GetTaskOutput()", func() {
 		It("succeeds", func() {
 			reporter := boshdirector.NewAsyncTaskReporter()
-			_, err := boshClient.Deploy(getManifest("single_vm_deployment.yml"), "", logger, reporter)
+			_, err := boshClient.Deploy(getManifest("single_vm_deployment.yml", deploymentName), "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(reporter.Finished).Should(Receive())
 
 			By("running the errand")
 			reporter = boshdirector.NewAsyncTaskReporter()
-			taskId, err := boshClient.RunErrand("dummy", "dummy_errand", nil, "", logger, reporter)
+			taskId, err := boshClient.RunErrand(deploymentName, "dummy_errand", nil, "", logger, reporter)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the task output")
@@ -242,8 +246,8 @@ var _ = Describe("BOSH client", func() {
 	})
 })
 
-func getManifest(filename string) []byte {
+func getManifest(filename, deploymentName string) []byte {
 	bytes, err := ioutil.ReadFile(fmt.Sprintf("../fixtures/%s", filename))
 	Expect(err).NotTo(HaveOccurred())
-	return bytes
+	return append(bytes, []byte("\nname: "+deploymentName)...)
 }
