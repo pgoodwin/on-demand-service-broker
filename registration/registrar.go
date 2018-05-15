@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deregistrar
+package registration
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/pivotal-cf/on-demand-service-broker/config"
 )
 
-type Deregistrar struct {
+type Registrar struct {
 	cfClient CloudFoundryClient
 	logger   *log.Logger
 }
@@ -36,16 +36,30 @@ type Config struct {
 type CloudFoundryClient interface {
 	GetServiceOfferingGUID(string, *log.Logger) (string, error)
 	DeregisterBroker(string, *log.Logger) error
+	CreateServiceBroker(string, string, string, string, string) error
+	EnableServiceAccess(string) error
 }
 
-func New(client CloudFoundryClient, logger *log.Logger) *Deregistrar {
-	return &Deregistrar{
+func New(client CloudFoundryClient, logger *log.Logger) *Registrar {
+	return &Registrar{
 		cfClient: client,
 		logger:   logger,
 	}
 }
 
-func (r *Deregistrar) Deregister(brokerName string) error {
+func (r *Registrar) Register(brokerName, brokerUsername, brokerPassword, brokerURI, serviceName string) error {
+	if err := r.cfClient.CreateServiceBroker(brokerName, brokerUsername, brokerPassword, brokerURI, serviceName); err != nil {
+		return err
+	}
+
+	if err := r.cfClient.EnableServiceAccess(serviceName); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Registrar) Deregister(brokerName string) error {
 	var brokerGUID string
 
 	brokerGUID, err := r.cfClient.GetServiceOfferingGUID(brokerName, r.logger)

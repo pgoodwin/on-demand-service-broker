@@ -10,6 +10,10 @@ import (
 	"fmt"
 	"log"
 
+	"bytes"
+
+	"net/http"
+
 	s "github.com/pivotal-cf/on-demand-service-broker/service"
 )
 
@@ -36,6 +40,57 @@ func New(
 		return Client{}, err
 	}
 	return Client{httpJsonClient: httpClient, url: url}, nil
+}
+
+func (c Client) EnableServiceAccess(serviceName string) error {
+	//return c.changeServiceAccess(serviceName, true, nil)
+	return nil
+}
+
+func (c Client) CreateServiceBroker(brokerName, brokerUsername, brokerPassword, brokerURI, serviceName string) error {
+	bodyBytes := fmt.Sprintf(`{
+		"name": "%s",
+		"broker_url": "%s",
+		"auth_username": "%s",
+		"auth_password": "%s"
+	}`, brokerName, brokerURI, brokerUsername, brokerPassword)
+	body := bytes.NewReader([]byte(bodyBytes))
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v2/service_brokers", c.url), body)
+	req.Header.Set("Content-type", "application/json")
+	c.AuthHeaderBuilder.AddAuthHeader(req, nil)
+
+	c.client.Do(req)
+	return nil
+}
+
+func (c Client) DisableServiceAccess(serviceOfferingID string, logger *log.Logger) error {
+	return c.changeServiceAccess(serviceOfferingID, false, logger)
+}
+
+func (c Client) changeServiceAccess(serviceOfferingID string, enable bool, logger *log.Logger) error {
+	plans, err := c.getPlansForServiceID(serviceOfferingID, logger)
+	if err != nil {
+		return err
+	}
+
+	var body string
+	if enable {
+		body = `{"public":true}`
+	} else {
+		body = `{"public":false}`
+	}
+	for _, p := range plans {
+		err := c.put(fmt.Sprintf("%s/v2/service_plans/%s", c.url, p.Metadata.GUID), body, logger)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c Client) DeregisterBroker(brokerGUID string, logger *log.Logger) error {
+	return c.delete(fmt.Sprintf("%s/v2/service_brokers/%s", c.url, brokerGUID), logger)
 }
 
 func (c Client) CountInstancesOfServiceOffering(serviceID string, logger *log.Logger) (map[ServicePlan]int, error) {
@@ -145,40 +200,6 @@ func (c Client) GetInstancesOfServiceOffering(serviceOfferingID string, logger *
 	}
 
 	return c.getInstances(plans, "", logger)
-}
-
-func (c Client) getInstances(plans []ServicePlan, query string, logger *log.Logger) ([]s.Instance, error) {
-	instances := []s.Instance{}
-	for _, plan := range plans {
-		path := fmt.Sprintf(
-			"/v2/service_plans/%s/service_instances?results-per-page=%d%s",
-			plan.Metadata.GUID,
-			defaultPerPage,
-			query,
-		)
-
-		for path != "" {
-			var serviceInstancesResp serviceInstancesResponse
-
-			instancesURL := fmt.Sprintf("%s%s", c.url, path)
-
-			err := c.get(instancesURL, &serviceInstancesResp, logger)
-			if err != nil {
-				return nil, err
-			}
-			for _, instance := range serviceInstancesResp.ServiceInstances {
-				instances = append(
-					instances,
-					s.Instance{
-						GUID:         instance.Metadata.GUID,
-						PlanUniqueID: plan.ServicePlanEntity.UniqueID,
-					},
-				)
-			}
-			path = serviceInstancesResp.NextPath
-		}
-	}
-	return instances, nil
 }
 
 func (c Client) GetBindingsForInstance(instanceGUID string, logger *log.Logger) ([]Binding, error) {
@@ -320,24 +341,38 @@ func (c Client) GetServiceOfferingGUID(brokerName string, logger *log.Logger) (s
 	return brokerGUID, nil
 }
 
-func (c Client) DisableServiceAccess(serviceOfferingID string, logger *log.Logger) error {
-	plans, err := c.getPlansForServiceID(serviceOfferingID, logger)
-	if err != nil {
-		return err
-	}
+func (c Client) getInstances(plans []ServicePlan, query string, logger *log.Logger) ([]s.Instance, error) {
+	instances := []s.Instance{}
+	for _, plan := range plans {
+		path := fmt.Sprintf(
+			"/v2/service_plans/%s/service_instances?results-per-page=%d%s",
+			plan.Metadata.GUID,
+			defaultPerPage,
+			query,
+		)
 
-	publicFalse := `{"public":false}`
-	for _, p := range plans {
-		err := c.put(fmt.Sprintf("%s/v2/service_plans/%s", c.url, p.Metadata.GUID), publicFalse, logger)
-		if err != nil {
-			return err
+		for path != "" {
+			var serviceInstancesResp serviceInstancesResponse
+
+			instancesURL := fmt.Sprintf("%s%s", c.url, path)
+
+			err := c.get(instancesURL, &serviceInstancesResp, logger)
+			if err != nil {
+				return nil, err
+			}
+			for _, instance := range serviceInstancesResp.ServiceInstances {
+				instances = append(
+					instances,
+					s.Instance{
+						GUID:         instance.Metadata.GUID,
+						PlanUniqueID: plan.ServicePlanEntity.UniqueID,
+					},
+				)
+			}
+			path = serviceInstancesResp.NextPath
 		}
 	}
-	return nil
-}
-
-func (c Client) DeregisterBroker(brokerGUID string, logger *log.Logger) error {
-	return c.delete(fmt.Sprintf("%s/v2/service_brokers/%s", c.url, brokerGUID), logger)
+	return instances, nil
 }
 
 func (c Client) getPlansForServiceID(serviceID string, logger *log.Logger) ([]ServicePlan, error) {

@@ -183,6 +183,48 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Describe("CreateServiceBroker", func() {
+		const (
+			brokerName, brokerUsername, brokerPassword, brokerURI, serviceName = "broker-name", "username", "psw", "https://foo.example.com", "redis"
+		)
+
+		It("does not return an error", func() {
+			server.VerifyAndMock(
+				mockcfapi.CreateServiceBroker().WithAuthorizationHeader(cfAuthorizationHeader).RespondsOKWith(""),
+			)
+
+			client, err := cf.New(server.URL, authHeaderBuilder, nil, true)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = client.CreateServiceBroker(brokerName, brokerUsername, brokerPassword, brokerURI, serviceName)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		XIt("returns an error when the operation fails", func() {
+
+		})
+
+		Describe("EnableServiceAccess", func() {
+			It("does not return an error", func() {
+				server.VerifyAndMock(
+					mockcfapi.ListServicePlans(serviceGUID).WithAuthorizationHeader(cfAuthorizationHeader).RespondsOKWith(fixture("list_service_plans_response.json")),
+					mockcfapi.EnableServiceAccess().WithAuthorizationHeader(cfAuthorizationHeader).RespondsOKWith(""),
+					mockcfapi.EnableServiceAccess().WithAuthorizationHeader(cfAuthorizationHeader).RespondsOKWith(""),
+				)
+
+				client, err := cf.New(server.URL, authHeaderBuilder, nil, true)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = client.EnableServiceAccess(serviceName)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			XIt("returns an error when the operation fails", func() {
+
+			})
+		})
+	})
+
 	Describe("CountInstancesOfServiceOffering", func() {
 		It("fetches instance counts per plan", func() {
 			server.VerifyAndMock(

@@ -83,7 +83,7 @@ var _ = Describe("purger", func() {
 		Expect(purgeTool.DeleteInstancesAndDeregister(serviceOfferingGUID, brokerName)).To(MatchError("Purger Failed: failed to delete stuff"))
 	})
 
-	It("returns an error when the deregistrar fails", func() {
+	It("returns an error when the registration fails", func() {
 		fakeRegistrar.DeregisterReturns(errors.New("failed to deregister"))
 		Expect(purgeTool.DeleteInstancesAndDeregister(serviceOfferingGUID, brokerName)).To(MatchError("Purger Failed: failed to deregister"))
 	})

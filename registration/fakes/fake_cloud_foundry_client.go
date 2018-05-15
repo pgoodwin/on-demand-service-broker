@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/pivotal-cf/on-demand-service-broker/deregistrar"
+	"github.com/pivotal-cf/on-demand-service-broker/registration"
 )
 
 type FakeCloudFoundryClient struct {
@@ -33,6 +33,32 @@ type FakeCloudFoundryClient struct {
 		result1 error
 	}
 	deregisterBrokerReturnsOnCall map[int]struct {
+		result1 error
+	}
+	CreateServiceBrokerStub        func(string, string, string, string, string) error
+	createServiceBrokerMutex       sync.RWMutex
+	createServiceBrokerArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+	}
+	createServiceBrokerReturns struct {
+		result1 error
+	}
+	createServiceBrokerReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EnableServiceAccessStub        func(string) error
+	enableServiceAccessMutex       sync.RWMutex
+	enableServiceAccessArgsForCall []struct {
+		arg1 string
+	}
+	enableServiceAccessReturns struct {
+		result1 error
+	}
+	enableServiceAccessReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -140,6 +166,106 @@ func (fake *FakeCloudFoundryClient) DeregisterBrokerReturnsOnCall(i int, result1
 	}{result1}
 }
 
+func (fake *FakeCloudFoundryClient) CreateServiceBroker(arg1 string, arg2 string, arg3 string, arg4 string, arg5 string) error {
+	fake.createServiceBrokerMutex.Lock()
+	ret, specificReturn := fake.createServiceBrokerReturnsOnCall[len(fake.createServiceBrokerArgsForCall)]
+	fake.createServiceBrokerArgsForCall = append(fake.createServiceBrokerArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("CreateServiceBroker", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.createServiceBrokerMutex.Unlock()
+	if fake.CreateServiceBrokerStub != nil {
+		return fake.CreateServiceBrokerStub(arg1, arg2, arg3, arg4, arg5)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.createServiceBrokerReturns.result1
+}
+
+func (fake *FakeCloudFoundryClient) CreateServiceBrokerCallCount() int {
+	fake.createServiceBrokerMutex.RLock()
+	defer fake.createServiceBrokerMutex.RUnlock()
+	return len(fake.createServiceBrokerArgsForCall)
+}
+
+func (fake *FakeCloudFoundryClient) CreateServiceBrokerArgsForCall(i int) (string, string, string, string, string) {
+	fake.createServiceBrokerMutex.RLock()
+	defer fake.createServiceBrokerMutex.RUnlock()
+	return fake.createServiceBrokerArgsForCall[i].arg1, fake.createServiceBrokerArgsForCall[i].arg2, fake.createServiceBrokerArgsForCall[i].arg3, fake.createServiceBrokerArgsForCall[i].arg4, fake.createServiceBrokerArgsForCall[i].arg5
+}
+
+func (fake *FakeCloudFoundryClient) CreateServiceBrokerReturns(result1 error) {
+	fake.CreateServiceBrokerStub = nil
+	fake.createServiceBrokerReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCloudFoundryClient) CreateServiceBrokerReturnsOnCall(i int, result1 error) {
+	fake.CreateServiceBrokerStub = nil
+	if fake.createServiceBrokerReturnsOnCall == nil {
+		fake.createServiceBrokerReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.createServiceBrokerReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCloudFoundryClient) EnableServiceAccess(arg1 string) error {
+	fake.enableServiceAccessMutex.Lock()
+	ret, specificReturn := fake.enableServiceAccessReturnsOnCall[len(fake.enableServiceAccessArgsForCall)]
+	fake.enableServiceAccessArgsForCall = append(fake.enableServiceAccessArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("EnableServiceAccess", []interface{}{arg1})
+	fake.enableServiceAccessMutex.Unlock()
+	if fake.EnableServiceAccessStub != nil {
+		return fake.EnableServiceAccessStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.enableServiceAccessReturns.result1
+}
+
+func (fake *FakeCloudFoundryClient) EnableServiceAccessCallCount() int {
+	fake.enableServiceAccessMutex.RLock()
+	defer fake.enableServiceAccessMutex.RUnlock()
+	return len(fake.enableServiceAccessArgsForCall)
+}
+
+func (fake *FakeCloudFoundryClient) EnableServiceAccessArgsForCall(i int) string {
+	fake.enableServiceAccessMutex.RLock()
+	defer fake.enableServiceAccessMutex.RUnlock()
+	return fake.enableServiceAccessArgsForCall[i].arg1
+}
+
+func (fake *FakeCloudFoundryClient) EnableServiceAccessReturns(result1 error) {
+	fake.EnableServiceAccessStub = nil
+	fake.enableServiceAccessReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeCloudFoundryClient) EnableServiceAccessReturnsOnCall(i int, result1 error) {
+	fake.EnableServiceAccessStub = nil
+	if fake.enableServiceAccessReturnsOnCall == nil {
+		fake.enableServiceAccessReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.enableServiceAccessReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeCloudFoundryClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -147,6 +273,10 @@ func (fake *FakeCloudFoundryClient) Invocations() map[string][][]interface{} {
 	defer fake.getServiceOfferingGUIDMutex.RUnlock()
 	fake.deregisterBrokerMutex.RLock()
 	defer fake.deregisterBrokerMutex.RUnlock()
+	fake.createServiceBrokerMutex.RLock()
+	defer fake.createServiceBrokerMutex.RUnlock()
+	fake.enableServiceAccessMutex.RLock()
+	defer fake.enableServiceAccessMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
@@ -166,4 +296,4 @@ func (fake *FakeCloudFoundryClient) recordInvocation(key string, args []interfac
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ deregistrar.CloudFoundryClient = new(FakeCloudFoundryClient)
+var _ registration.CloudFoundryClient = new(FakeCloudFoundryClient)

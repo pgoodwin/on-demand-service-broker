@@ -48,6 +48,18 @@ type serviceBrokersMock struct {
 	*mockhttp.Handler
 }
 
+func CreateServiceBroker() *serviceBrokersMock {
+	return &serviceBrokersMock{
+		mockhttp.NewMockedHttpRequest("POST", "/v2/service_brokers"),
+	}
+}
+
+func EnableServiceAccess() *serviceBrokersMock {
+	return &serviceBrokersMock{
+		mockhttp.NewMockedHttpRequest("PUT", "/v2/service_plans"),
+	}
+}
+
 func ListServiceBrokers() *serviceBrokersMock {
 	return &serviceBrokersMock{
 		mockhttp.NewMockedHttpRequest("GET", "/v2/service_brokers"),

@@ -25,8 +25,8 @@ import (
 	"io/ioutil"
 
 	"github.com/pivotal-cf/on-demand-service-broker/cf"
-	"github.com/pivotal-cf/on-demand-service-broker/deregistrar"
 	"github.com/pivotal-cf/on-demand-service-broker/loggerfactory"
+	"github.com/pivotal-cf/on-demand-service-broker/registration"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 		logger.Fatalf("Error reading config file: %s", err)
 	}
 
-	var config deregistrar.Config
+	var config registration.Config
 	err = yaml.Unmarshal(rawConfig, &config)
 	if err != nil {
 		logger.Fatalf("Invalid config file: %s", err)
@@ -71,7 +71,7 @@ func main() {
 		logger.Fatalf("Error creating Cloud Foundry client: %s", err)
 	}
 
-	deregistrarTool := deregistrar.New(cfClient, logger)
+	deregistrarTool := registration.New(cfClient, logger)
 	err = deregistrarTool.Deregister(*brokerName)
 	if err != nil {
 		logger.Fatal(err.Error())
