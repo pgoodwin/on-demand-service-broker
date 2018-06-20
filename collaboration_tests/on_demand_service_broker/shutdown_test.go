@@ -72,7 +72,7 @@ var _ = Describe("Shutdown of the broker process", func() {
 		deployStarted := make(chan bool)
 		deployFinished := make(chan bool)
 
-		fakeDeployer.CreateStub = func(name, id string, reqParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
+		fakeDeployer.CreateStub = func(manifest []byte, name, id string, reqParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
 			deployStarted <- true
 			<-deployFinished
 			return 0, nil, nil
@@ -111,7 +111,7 @@ var _ = Describe("Shutdown of the broker process", func() {
 		deployStarted := make(chan bool)
 		deployFinished := make(chan bool)
 
-		fakeDeployer.CreateStub = func(name, id string, reqParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
+		fakeDeployer.CreateStub = func(manifest []byte, name, id string, reqParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
 			deployStarted <- true
 			<-deployFinished
 			return 0, nil, errors.New("interrupted")

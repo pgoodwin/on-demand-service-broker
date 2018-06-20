@@ -63,7 +63,6 @@ var _ = Describe("provisioning", func() {
 		jsonContext, err = json.Marshal(arbContext)
 		Expect(err).NotTo(HaveOccurred())
 		boshClient.GetDeploymentReturns(nil, false, nil)
-
 	})
 
 	JustBeforeEach(func() {
@@ -90,7 +89,8 @@ var _ = Describe("provisioning", func() {
 		)
 
 		BeforeEach(func() {
-			newlyGeneratedManifest = []byte("a newly generated manifest")
+			newlyGeneratedManifest = []byte("name: the-supreme-manifest")
+			serviceAdapter.GenerateManifestReturns(sdk.MarshalledGenerateManifest{Manifest: string(newlyGeneratedManifest)}, nil)
 			fakeDeployer.CreateReturns(deployTaskID, newlyGeneratedManifest, nil)
 		})
 
@@ -102,9 +102,26 @@ var _ = Describe("provisioning", func() {
 			Expect(serviceSpec.IsAsync).To(BeTrue())
 		})
 
+		It("invokes the service adapter", func() {
+			Expect(serviceAdapter.GenerateManifestCallCount()).To(Equal(1), "Expected to call GenerateManifest")
+			actualDeploymentName, actualPlanID, actualParams, actualPrevManifest, actualPrevPlanID, _ := serviceAdapter.GenerateManifestArgsForCall(0)
+			Expect(actualDeploymentName).To(Equal(deploymentName(instanceID)))
+			Expect(actualPlanID).To(Equal(planID))
+			Expect(actualParams).To(Equal(map[string]interface{}{
+				"plan_id":           planID,
+				"context":           arbContext,
+				"parameters":        arbParams,
+				"organization_guid": organizationGUID,
+				"space_guid":        spaceGUID,
+				"service_id":        serviceOfferingID,
+			}))
+			Expect(actualPrevManifest).To(Equal([]byte{}))
+			Expect(actualPrevPlanID).To(BeNil())
+		})
+
 		It("invokes the deployer", func() {
 			Expect(fakeDeployer.CreateCallCount()).To(Equal(1))
-			actualDeploymentName, actualPlan, actualRequestParams, actualBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
+			actualManifest, actualDeploymentName, actualPlan, actualRequestParams, actualBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
 			Expect(actualRequestParams).To(Equal(map[string]interface{}{
 				"plan_id":           planID,
 				"context":           arbContext,
@@ -115,6 +132,7 @@ var _ = Describe("provisioning", func() {
 			}))
 			Expect(actualPlan).To(Equal(planID))
 			Expect(actualDeploymentName).To(Equal(deploymentName(instanceID)))
+			Expect(actualManifest).To(Equal(newlyGeneratedManifest))
 			Expect(actualBoshContextID).To(BeEmpty())
 		})
 
@@ -296,7 +314,7 @@ var _ = Describe("provisioning", func() {
 
 		It("calls the deployer with a bosh context id", func() {
 			Expect(fakeDeployer.CreateCallCount()).To(Equal(1))
-			_, _, _, actualBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
+			_, _, _, _, actualBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
 			Expect(actualBoshContextID).NotTo(BeEmpty())
 		})
 
@@ -326,10 +344,10 @@ var _ = Describe("provisioning", func() {
 
 			It("calls the deployer with a different bosh context id", func() {
 				Expect(fakeDeployer.CreateCallCount()).To(Equal(2))
-				_, _, _, firstBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
+				_, _, _, _, firstBoshContextID, _ := fakeDeployer.CreateArgsForCall(0)
 				Expect(firstBoshContextID).NotTo(BeNil())
 
-				_, _, _, secondBoshContextID, _ := fakeDeployer.CreateArgsForCall(1)
+				_, _, _, _, secondBoshContextID, _ := fakeDeployer.CreateArgsForCall(1)
 				Expect(secondBoshContextID).NotTo(Equal(firstBoshContextID))
 			})
 		})
@@ -398,7 +416,7 @@ var _ = Describe("provisioning", func() {
 		})
 
 		It("no arbitrary params are passed to the adapter", func() {
-			_, _, actualRequestParams, _, _ := fakeDeployer.CreateArgsForCall(0)
+			_, _, _, actualRequestParams, _, _ := fakeDeployer.CreateArgsForCall(0)
 			Expect(actualRequestParams["parameters"]).To(HaveLen(0))
 		})
 
@@ -468,6 +486,39 @@ var _ = Describe("provisioning", func() {
 
 		It("returns the try again later error for the user", func() {
 			Expect(provisionErr).To(MatchError(ContainSubstring("Currently unable to create service instance, please try again later")))
+		})
+	})
+
+	Context("when generating a manifest returns an UnknownFailureError", func() {
+		BeforeEach(func() {
+			serviceAdapter.GenerateManifestReturns(sdk.MarshalledGenerateManifest{}, serviceadapter.NewUnknownFailureError("unknown failure"))
+		})
+
+		It("logs the error", func() {
+			Expect(logBuffer.String()).To(ContainSubstring("unknown failure"))
+		})
+
+		It("returns the error", func() {
+			Expect(provisionErr).To(MatchError(ContainSubstring("unknown failure")))
+		})
+
+	})
+
+	Context("when generating a manifest returns a generic error", func() {
+		BeforeEach(func() {
+			serviceAdapter.GenerateManifestReturns(sdk.MarshalledGenerateManifest{}, fmt.Errorf("generic error"))
+		})
+
+		It("logs the error", func() {
+			Expect(logBuffer.String()).To(ContainSubstring("error: generic error"))
+		})
+
+		It("returns the error", func() {
+			Expect(provisionErr).To(MatchError(SatisfyAll(
+				ContainSubstring("There was a problem completing your request. Please contact your operations team providing the following information:"),
+				ContainSubstring("operation: create"),
+			)))
+
 		})
 	})
 

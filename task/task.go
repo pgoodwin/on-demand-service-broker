@@ -15,6 +15,7 @@ import (
 
 	"github.com/pivotal-cf/on-demand-service-broker/boshdirector"
 	"github.com/pivotal-cf/on-demand-services-sdk/bosh"
+	"github.com/pivotal-cf/on-demand-services-sdk/serviceadapter"
 	"gopkg.in/yaml.v2"
 )
 
@@ -33,7 +34,7 @@ type ManifestGenerator interface {
 		requestParams map[string]interface{},
 		oldManifest []byte,
 		previousPlanID *string, logger *log.Logger,
-	) (RawBoshManifest, error)
+	) (serviceadapter.MarshalledGenerateManifest, error)
 }
 
 type deployer struct {
@@ -48,13 +49,13 @@ func NewDeployer(boshClient BoshClient, manifestGenerator ManifestGenerator) dep
 	}
 }
 
-func (d deployer) Create(deploymentName, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
+func (d deployer) Create(manifest []byte, deploymentName, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
 	err := d.assertNoOperationsInProgress(deploymentName, logger)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	return d.doDeploy(deploymentName, planID, "create", requestParams, nil, nil, boshContextID, logger)
+	return d.doDeployWithManifest(manifest, deploymentName, planID, "create", requestParams, nil, nil, boshContextID, logger)
 }
 
 func (d deployer) Upgrade(deploymentName, planID string, previousPlanID *string, boshContextID string, logger *log.Logger) (int, []byte, error) {
@@ -78,7 +79,7 @@ func (d deployer) Update(
 	previousPlanID *string,
 	boshContextID string,
 	logger *log.Logger,
-) (boshTaskID int, manifest []byte, err error) {
+) (int, []byte, error) {
 	if err := d.assertNoOperationsInProgress(deploymentName, logger); err != nil {
 		return 0, nil, err
 	}
@@ -133,7 +134,7 @@ func (d deployer) checkForPendingChanges(
 		return err
 	}
 
-	regeneratedManifest, err := marshalBoshManifest(regeneratedManifestContent)
+	regeneratedManifest, err := marshalBoshManifest([]byte(regeneratedManifestContent.Manifest))
 	if err != nil {
 		return err
 	}
@@ -171,6 +172,27 @@ func (d deployer) doDeploy(
 	if err != nil {
 		return 0, nil, err
 	}
+
+	boshTaskID, err := d.boshClient.Deploy([]byte(manifest.Manifest), boshContextID, logger, boshdirector.NewAsyncTaskReporter())
+	if err != nil {
+		return 0, nil, fmt.Errorf("error deploying instance: %s\n", err)
+	}
+	logger.Printf("Bosh task ID for %s deployment %s is %d\n", operationType, deploymentName, boshTaskID)
+
+	return boshTaskID, []byte(manifest.Manifest), nil
+}
+
+func (d deployer) doDeployWithManifest(
+	manifest []byte,
+	deploymentName,
+	planID string,
+	operationType string,
+	requestParams map[string]interface{},
+	oldManifest []byte,
+	previousPlanID *string,
+	boshContextID string,
+	logger *log.Logger,
+) (int, []byte, error) {
 
 	boshTaskID, err := d.boshClient.Deploy(manifest, boshContextID, logger, boshdirector.NewAsyncTaskReporter())
 	if err != nil {

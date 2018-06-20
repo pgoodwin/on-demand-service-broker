@@ -129,11 +129,21 @@ func (b *Broker) provisionInstance(ctx context.Context, instanceID string, planI
 		boshContextID = uuid.New()
 	}
 
-	boshTaskID, manifest, err := b.deployer.Create(deploymentName(instanceID), plan.ID, requestParams, boshContextID, logger)
+	generateManifestOutput, err := b.adapterClient.GenerateManifest(deploymentName(instanceID), plan.ID, requestParams, nil, nil, nil)
+	switch err := err.(type) {
+	case serviceadapter.UnknownFailureError:
+		return errs(adapterToAPIError(ctx, err))
+	case error:
+		return errs(NewGenericError(ctx, err))
+	}
+
+	// store secrets if any
+
+	boshTaskID, manifest, err := b.deployer.Create([]byte(generateManifestOutput.Manifest), deploymentName(instanceID), plan.ID, requestParams, boshContextID, logger)
 	switch err := err.(type) {
 	case boshdirector.RequestError:
 		return errs(NewBoshRequestError("create", err))
-	case DisplayableError:
+	case DisplayableError: // TODO: Is it possible to return DisplayableError from deployer?
 		return errs(err)
 	case serviceadapter.UnknownFailureError:
 		return errs(adapterToAPIError(ctx, err))

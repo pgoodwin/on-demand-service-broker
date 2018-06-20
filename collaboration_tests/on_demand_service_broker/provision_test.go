@@ -48,10 +48,11 @@ var _ = Describe("Provision service instance", func() {
 	)
 
 	var (
-		planQuota       = 5
-		globalQuota     = 12
-		arbitraryParams map[string]interface{}
-		conf            brokerConfig.Config
+		planQuota        = 5
+		globalQuota      = 12
+		arbitraryParams  map[string]interface{}
+		conf             brokerConfig.Config
+		expectedManifest sdk.MarshalledGenerateManifest
 	)
 
 	BeforeEach(func() {
@@ -65,6 +66,8 @@ var _ = Describe("Provision service instance", func() {
 			}: 0,
 		}
 		fakeCfClient.CountInstancesOfServiceOfferingReturns(planCounts, nil)
+		fakeServiceAdapter.GenerateManifestReturns(expectedManifest, nil)
+		expectedManifest = sdk.MarshalledGenerateManifest{Manifest: "name: foo"}
 
 		conf = brokerConfig.Config{
 			Broker: brokerConfig.Broker{
@@ -167,7 +170,9 @@ var _ = Describe("Provision service instance", func() {
 			Expect(operationData.PlanID).To(BeEmpty(), "plan id")
 
 			By("calling the deployer with the correct parameters")
-			deploymentName, planID, requestParams, boshContextID, _ := fakeDeployer.CreateArgsForCall(0)
+
+			manifest, deploymentName, planID, requestParams, boshContextID, _ := fakeDeployer.CreateArgsForCall(0)
+			Expect(manifest).To(Equal([]byte(expectedManifest.Manifest)))
 			Expect(deploymentName).To(Equal("service-instance_" + instanceID))
 			Expect(planID).To(Equal(planWithQuotaID))
 			Expect(requestParams).To(Equal(map[string]interface{}{

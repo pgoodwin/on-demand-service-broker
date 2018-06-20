@@ -9,9 +9,10 @@ import (
 )
 
 type FakeDeployer struct {
-	CreateStub        func(deploymentName, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error)
+	CreateStub        func(manifest []byte, deploymentName, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error)
 	createMutex       sync.RWMutex
 	createArgsForCall []struct {
+		manifest       []byte
 		deploymentName string
 		planID         string
 		requestParams  map[string]interface{}
@@ -71,20 +72,26 @@ type FakeDeployer struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeDeployer) Create(deploymentName string, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
+func (fake *FakeDeployer) Create(manifest []byte, deploymentName string, planID string, requestParams map[string]interface{}, boshContextID string, logger *log.Logger) (int, []byte, error) {
+	var manifestCopy []byte
+	if manifest != nil {
+		manifestCopy = make([]byte, len(manifest))
+		copy(manifestCopy, manifest)
+	}
 	fake.createMutex.Lock()
 	ret, specificReturn := fake.createReturnsOnCall[len(fake.createArgsForCall)]
 	fake.createArgsForCall = append(fake.createArgsForCall, struct {
+		manifest       []byte
 		deploymentName string
 		planID         string
 		requestParams  map[string]interface{}
 		boshContextID  string
 		logger         *log.Logger
-	}{deploymentName, planID, requestParams, boshContextID, logger})
-	fake.recordInvocation("Create", []interface{}{deploymentName, planID, requestParams, boshContextID, logger})
+	}{manifestCopy, deploymentName, planID, requestParams, boshContextID, logger})
+	fake.recordInvocation("Create", []interface{}{manifestCopy, deploymentName, planID, requestParams, boshContextID, logger})
 	fake.createMutex.Unlock()
 	if fake.CreateStub != nil {
-		return fake.CreateStub(deploymentName, planID, requestParams, boshContextID, logger)
+		return fake.CreateStub(manifest, deploymentName, planID, requestParams, boshContextID, logger)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
@@ -98,10 +105,10 @@ func (fake *FakeDeployer) CreateCallCount() int {
 	return len(fake.createArgsForCall)
 }
 
-func (fake *FakeDeployer) CreateArgsForCall(i int) (string, string, map[string]interface{}, string, *log.Logger) {
+func (fake *FakeDeployer) CreateArgsForCall(i int) ([]byte, string, string, map[string]interface{}, string, *log.Logger) {
 	fake.createMutex.RLock()
 	defer fake.createMutex.RUnlock()
-	return fake.createArgsForCall[i].deploymentName, fake.createArgsForCall[i].planID, fake.createArgsForCall[i].requestParams, fake.createArgsForCall[i].boshContextID, fake.createArgsForCall[i].logger
+	return fake.createArgsForCall[i].manifest, fake.createArgsForCall[i].deploymentName, fake.createArgsForCall[i].planID, fake.createArgsForCall[i].requestParams, fake.createArgsForCall[i].boshContextID, fake.createArgsForCall[i].logger
 }
 
 func (fake *FakeDeployer) CreateReturns(result1 int, result2 []byte, result3 error) {

@@ -25,7 +25,8 @@ var _ = Describe("Manifest Generator", func() {
 			serviceReleases serviceadapter.ServiceReleases
 			serviceStemcell serviceadapter.Stemcell
 
-			manifest []byte
+			generateManifestOutput serviceadapter.MarshalledGenerateManifest
+			manifest               []byte
 
 			err error
 
@@ -138,13 +139,14 @@ var _ = Describe("Manifest Generator", func() {
 		})
 
 		JustBeforeEach(func() {
-			manifest, err = mg.GenerateManifest(deploymentName, planGUID, requestParams, oldManifest, previousPlanID, logger)
+			generateManifestOutput, err = mg.GenerateManifest(deploymentName, planGUID, requestParams, oldManifest, previousPlanID, logger)
+			manifest = []byte(generateManifestOutput.Manifest)
 		})
 
 		Context("when called with correct arguments", func() {
 			generatedManifest := []byte("some manifest")
 			BeforeEach(func() {
-				serviceAdapter.GenerateManifestReturns(generatedManifest, nil)
+				serviceAdapter.GenerateManifestReturns(serviceadapter.MarshalledGenerateManifest{Manifest: string(generatedManifest)}, nil)
 			})
 
 			It("calls service adapter once", func() {
@@ -262,7 +264,7 @@ var _ = Describe("Manifest Generator", func() {
 
 		Context("when the adapter returns an error", func() {
 			BeforeEach(func() {
-				serviceAdapter.GenerateManifestReturns(nil, errors.New("oops"))
+				serviceAdapter.GenerateManifestReturns(serviceadapter.MarshalledGenerateManifest{}, errors.New("oops"))
 			})
 
 			It("is returned", func() {
