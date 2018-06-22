@@ -10,10 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/on-demand-service-broker/brokercontext"
+	"github.com/pivotal-cf/on-demand-service-broker/config"
 	"github.com/pivotal-cf/on-demand-service-broker/serviceadapter"
 )
 
@@ -44,6 +46,13 @@ func (b *Broker) Bind(
 	secretsMap, err := b.secretResolver.ResolveManifestSecrets(manifest, deploymentVariables, logger)
 	if err != nil {
 		logger.Printf("failed to resolve manifest secrets: %s", err.Error())
+	}
+
+	odbPrefix := fmt.Sprintf("/%s/%s/%s/", config.ODBCredhubNamespace, b.serviceOffering.ID, deploymentName(instanceID))
+	sanitizedSecretsMap := map[string]string{}
+	for path, secret := range secretsMap {
+		newKey := strings.TrimPrefix(path, odbPrefix)
+		sanitizedSecretsMap[newKey] = secret
 	}
 
 	logger.Printf("service adapter will create binding with ID %s for instance %s\n", bindingID, instanceID)
@@ -85,7 +94,7 @@ func (b *Broker) Bind(
 	}
 
 	var createBindingErr error
-	binding, createBindingErr := b.adapterClient.CreateBinding(bindingID, vms, manifest, mappedParams, secretsMap, logger)
+	binding, createBindingErr := b.adapterClient.CreateBinding(bindingID, vms, manifest, mappedParams, sanitizedSecretsMap, logger)
 	if createBindingErr != nil {
 		if !b.EnableResolveSecretsAtBind {
 			logger.Printf("broker.resolve_secrets_at_bind was: false ")

@@ -124,7 +124,7 @@ func (m manifestGenerator) GenerateSecretPaths(deploymentName string, secretsMap
 		secrets = append(secrets, ManifestSecret{
 			Name:  name,
 			Value: val,
-			Path:  fmt.Sprintf("/odb/%s/%s/%s", m.serviceOffering.ID, deploymentName, name),
+			Path:  fmt.Sprintf("/%s/%s/%s/%s", config.ODBCredhubNamespace, m.serviceOffering.ID, deploymentName, name),
 		})
 	}
 	return secrets

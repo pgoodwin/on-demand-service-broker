@@ -289,8 +289,8 @@ var _ = Describe("Manifest Generator", func() {
 			deploymentName := "the-name"
 			secretsPath := mg.GenerateSecretPaths(deploymentName, generatedManifestSecrets)
 			Expect(secretsPath).To(SatisfyAll(
-				ContainElement(ManifestSecret{Name: "foo", Path: fmt.Sprintf("/odb/%s/%s/foo", serviceOfferingID, deploymentName), Value: generatedManifestSecrets["foo"]}),
-				ContainElement(ManifestSecret{Name: "secret", Path: fmt.Sprintf("/odb/%s/%s/secret", serviceOfferingID, deploymentName), Value: generatedManifestSecrets["secret"]}),
+				ContainElement(ManifestSecret{Name: "foo", Path: fmt.Sprintf("/%s/%s/%s/foo", config.ODBCredhubNamespace, serviceOfferingID, deploymentName), Value: generatedManifestSecrets["foo"]}),
+				ContainElement(ManifestSecret{Name: "secret", Path: fmt.Sprintf("/%s/%s/%s/secret", config.ODBCredhubNamespace, serviceOfferingID, deploymentName), Value: generatedManifestSecrets["secret"]}),
 			))
 		})
 	})
@@ -299,10 +299,10 @@ var _ = Describe("Manifest Generator", func() {
 		It("replaces odb_secret:foo with /odb/<dep-name>/<svc-id>/foo", func() {
 			manifest := fmt.Sprintf("name: ((%s:foo))\nsecret: ((%[1]s:bar))", serviceadapter.ODBSecretPrefix)
 			secrets := []ManifestSecret{
-				{Name: "foo", Value: "something", Path: "/odb/jim/bob/foo"},
-				{Name: "bar", Value: "another thing", Path: "/odb/jim/bob/bar"},
+				{Name: "foo", Value: "something", Path: "/" + config.ODBCredhubNamespace + "/jim/bob/foo"},
+				{Name: "bar", Value: "another thing", Path: "/" + config.ODBCredhubNamespace + "/jim/bob/bar"},
 			}
-			expectedManifest := "name: ((/odb/jim/bob/foo))\nsecret: ((/odb/jim/bob/bar))"
+			expectedManifest := fmt.Sprintf("name: ((/%s/jim/bob/foo))\nsecret: ((/%[1]s/jim/bob/bar))", config.ODBCredhubNamespace)
 			substitutedManifest := mg.ReplaceODBRefs(manifest, secrets)
 			Expect(substitutedManifest).To(Equal(expectedManifest))
 		})
@@ -310,9 +310,9 @@ var _ = Describe("Manifest Generator", func() {
 		It("replaces all occurrences of a managed secret", func() {
 			manifest := fmt.Sprintf("name: ((%s:foo))\nsecret: ((%[1]s:foo))", serviceadapter.ODBSecretPrefix)
 			secrets := []ManifestSecret{
-				{Name: "foo", Value: "something", Path: "/odb/jim/bob/foo"},
+				{Name: "foo", Value: "something", Path: "/" + config.ODBCredhubNamespace + "/jim/bob/foo"},
 			}
-			expectedManifest := "name: ((/odb/jim/bob/foo))\nsecret: ((/odb/jim/bob/foo))"
+			expectedManifest := fmt.Sprintf("name: ((/%s/jim/bob/foo))\nsecret: ((/%[1]s/jim/bob/foo))", config.ODBCredhubNamespace)
 			substitutedManifest := mg.ReplaceODBRefs(manifest, secrets)
 			Expect(substitutedManifest).To(Equal(expectedManifest))
 		})

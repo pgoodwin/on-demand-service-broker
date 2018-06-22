@@ -20,6 +20,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const ODBCredhubNamespace = "odb"
+
 type Config struct {
 	Broker            Broker
 	Bosh              Bosh

@@ -20,6 +20,7 @@ import (
 	"github.com/pivotal-cf/on-demand-service-broker/broker"
 	brokerfakes "github.com/pivotal-cf/on-demand-service-broker/broker/fakes"
 	"github.com/pivotal-cf/on-demand-service-broker/brokercontext"
+	"github.com/pivotal-cf/on-demand-service-broker/config"
 	"github.com/pivotal-cf/on-demand-service-broker/noopservicescontroller"
 	"github.com/pivotal-cf/on-demand-service-broker/serviceadapter"
 	"github.com/pivotal-cf/on-demand-services-sdk/bosh"
@@ -483,15 +484,24 @@ var _ = Describe("Bind", func() {
 
 	Describe("secret resolver", func() {
 		var broker *broker.Broker
+		var expectedSecrets map[string]string
 
 		BeforeEach(func() {
 			broker = createDefaultBroker()
 			boshClient.VariablesReturns(boshVariables, nil)
+			expectedSecrets = map[string]string{
+				"/foo/bar":   "foo",
+				"/some/path": "bar",
+			}
+			secretResolver.ResolveManifestSecretsReturns(expectedSecrets, nil)
 		})
 
 		It("is called with manifest as param", func() {
 			bindResult, bindErr = broker.Bind(context.Background(), instanceID, bindingID, bindRequest)
 			Expect(serviceAdapter.CreateBindingCallCount()).To(Equal(1))
+			_, _, _, _, bindSecrets, _ := serviceAdapter.CreateBindingArgsForCall(0)
+			Expect(bindSecrets).To(Equal(expectedSecrets))
+
 			Expect(secretResolver.ResolveManifestSecretsCallCount()).To(Equal(1))
 			manifest, deploymentVariables, _ := secretResolver.ResolveManifestSecretsArgsForCall(0)
 			Expect(manifest).To(Equal(actualManifest))
@@ -499,6 +509,22 @@ var _ = Describe("Bind", func() {
 				{Path: "/foo/bar", ID: "123asd"},
 				{Path: "/some/path", ID: "456zxc"},
 			}))
+		})
+
+		It("sanitises the secrets, removing ODB prefix", func() {
+			secrets := map[string]string{
+				fmt.Sprintf("/%s/%s/%s/foo", config.ODBCredhubNamespace, serviceOfferingID, deploymentName(instanceID)): "foo",
+				"/some/path": "bar",
+			}
+			expectedSecrets = map[string]string{
+				"foo":        "foo",
+				"/some/path": "bar",
+			}
+			secretResolver.ResolveManifestSecretsReturns(secrets, nil)
+			bindResult, bindErr = broker.Bind(context.Background(), instanceID, bindingID, bindRequest)
+			Expect(serviceAdapter.CreateBindingCallCount()).To(Equal(1))
+			_, _, _, _, bindSecrets, _ := serviceAdapter.CreateBindingArgsForCall(0)
+			Expect(bindSecrets).To(Equal(expectedSecrets))
 		})
 
 		It("logs errors when cannot resolve secrets", func() {
