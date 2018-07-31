@@ -111,9 +111,10 @@ func startBroker(conf config.Config, logger *log.Logger, loggerFactory *loggerfa
 	}
 
 	serviceAdapter := &serviceadapter.Client{
-		ExternalBinPath: conf.ServiceAdapter.Path,
-		CommandRunner:   serviceadapter.NewCommandRunner(),
-		UsingStdin:      conf.Broker.UsingStdin,
+		ExternalBinPath:       conf.ServiceAdapter.Path,
+		CommandRunner:         serviceadapter.NewCommandRunner(),
+		UsingStdin:            conf.Broker.UsingStdin,
+		SecureManifestEnabled: conf.Broker.EnableSecureManifests,
 	}
 
 	startupChecks = append(startupChecks,

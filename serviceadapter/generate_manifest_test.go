@@ -57,8 +57,9 @@ var _ = Describe("external service adapter", func() {
 		logger = log.New(io.MultiWriter(GinkgoWriter, logs), "[unit-tests] ", log.LstdFlags)
 		cmdRunner = new(fakes.FakeCommandRunner)
 		a = &serviceadapter.Client{
-			CommandRunner:   cmdRunner,
-			ExternalBinPath: externalBinPath,
+			CommandRunner:         cmdRunner,
+			ExternalBinPath:       externalBinPath,
+			SecureManifestEnabled: true,
 		}
 		cmdRunner.RunReturns([]byte(expectedGenerateManifestOutput.Manifest), []byte(""), intPtr(serviceadapter.SuccessExitCode), nil)
 		cmdRunner.RunWithInputParamsReturns([]byte(toJson(expectedGenerateManifestOutput)), []byte(""), intPtr(serviceadapter.SuccessExitCode), nil)
@@ -100,11 +101,12 @@ var _ = Describe("external service adapter", func() {
 
 		inputParams = sdk.InputParams{
 			GenerateManifest: sdk.GenerateManifestParams{
-				ServiceDeployment: toJson(serviceDeployment),
-				Plan:              planToJson(plan),
-				PreviousPlan:      planToJson(*previousPlan),
-				PreviousManifest:  string(previousManifest),
-				RequestParameters: toJson(params),
+				ServiceDeployment:     toJson(serviceDeployment),
+				Plan:                  planToJson(plan),
+				PreviousPlan:          planToJson(*previousPlan),
+				PreviousManifest:      string(previousManifest),
+				RequestParameters:     toJson(params),
+				SecureManifestEnabled: true,
 			},
 		}
 
@@ -276,6 +278,24 @@ stemcells:
 				"generate-manifest",
 			))
 			Expect(actualInputParams).To(Equal(inputParams))
+		})
+
+		When("Secure Manifest is disabled", func() {
+			BeforeEach(func() {
+				a.SecureManifestEnabled = false
+			})
+
+			It("sets SecureManifestEnabled to false", func() {
+				Expect(cmdRunner.RunCallCount()).To(Equal(0))
+				Expect(cmdRunner.RunWithInputParamsCallCount()).To(Equal(1))
+				actualInputParams, argsPassed := cmdRunner.RunWithInputParamsArgsForCall(0)
+				Expect(argsPassed).To(ConsistOf(
+					externalBinPath,
+					"generate-manifest",
+				))
+				inputParams.GenerateManifest.SecureManifestEnabled = false
+				Expect(actualInputParams).To(Equal(inputParams))
+			})
 		})
 
 		Context("when the external service adapter succeeds", func() {

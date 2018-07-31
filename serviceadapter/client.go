@@ -22,9 +22,10 @@ type CommandRunner interface {
 }
 
 type Client struct {
-	ExternalBinPath string
-	CommandRunner   CommandRunner
-	UsingStdin      bool
+	ExternalBinPath       string
+	CommandRunner         CommandRunner
+	UsingStdin            bool
+	SecureManifestEnabled bool
 }
 
 func SanitiseForJSON(properties sdk.Properties) sdk.Properties {

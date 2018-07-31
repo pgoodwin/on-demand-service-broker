@@ -16,6 +16,8 @@
 package cf_helpers
 
 import (
+	"strings"
+
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/onsi/gomega"
@@ -32,5 +34,9 @@ func GetServiceKey(serviceName, serviceKeyName string) string {
 	Eventually(serviceKey, CfTimeout).Should(gexec.Exit(0))
 	serviceKeyContent := string(serviceKey.Buffer().Contents())
 
-	return serviceKeyContent
+	lines := strings.Split(serviceKeyContent, "\n")
+	if len(lines) < 2 {
+		return ""
+	}
+	return strings.Join(lines[2:], "\n")
 }

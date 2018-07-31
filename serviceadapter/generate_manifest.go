@@ -63,11 +63,12 @@ func (c *Client) GenerateManifest(serviceDeployment sdk.ServiceDeployment, plan 
 	if c.UsingStdin {
 		inputParams := sdk.InputParams{
 			GenerateManifest: sdk.GenerateManifestParams{
-				ServiceDeployment: string(serialisedServiceDeployment),
-				Plan:              string(serialisedPlan),
-				RequestParameters: string(serialisedRequestParams),
-				PreviousPlan:      string(serialisedPreviousPlan),
-				PreviousManifest:  string(previousManifest),
+				ServiceDeployment:     string(serialisedServiceDeployment),
+				Plan:                  string(serialisedPlan),
+				RequestParameters:     string(serialisedRequestParams),
+				PreviousPlan:          string(serialisedPreviousPlan),
+				PreviousManifest:      string(previousManifest),
+				SecureManifestEnabled: c.SecureManifestEnabled,
 			},
 		}
 
