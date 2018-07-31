@@ -75,7 +75,6 @@ func (c *Client) GenerateManifest(serviceDeployment sdk.ServiceDeployment, plan 
 			inputParams,
 			c.ExternalBinPath, "generate-manifest",
 		)
-		// { "manifest":"...","secrets": {"key":"value","jsonObj":{"foo":"bar"}}}
 	} else {
 		stdout, stderr, exitCode, err = c.CommandRunner.Run(
 			c.ExternalBinPath, "generate-manifest",
